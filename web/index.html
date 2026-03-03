@@ -29,8 +29,22 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <!-- Optional: Google Sign-In client ID (used if you call Google Identity Services directly, not required for Firebase) -->
-  <meta name="google-signin-client_id" content="359199426100-mtq7tsf6jn4q92oi0bbscvfd8jndo8gl.apps.googleusercontent.com">
+  <!-- Optional: Google Sign-In client ID (from .env) -->
+  <script>
+    // Load client ID from .env (requires build step or JS injection)
+    fetch('/.env')
+      .then(response => response.text())
+      .then(text => {
+        const match = text.match(/GOOGLE_SIGNIN_CLIENT_ID=(.*)/);
+        if (match) {
+          const clientId = match[1].trim();
+          const meta = document.createElement('meta');
+          meta.name = 'google-signin-client_id';
+          meta.content = clientId;
+          document.head.appendChild(meta);
+        }
+      });
+  </script>
 
   <title>GetInLine</title>
   <link rel="manifest" href="manifest.json">
