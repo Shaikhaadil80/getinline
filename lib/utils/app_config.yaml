@@ -1,0 +1,72 @@
+# =============================================================================
+# GETINLINE FLUTTER - app_config.yaml
+# Application Configuration Template
+# =============================================================================
+
+# App Information
+app:
+  name: GetInLine
+  version: 1.0.0
+  build_number: 1
+  package_name: com.example.getinline
+
+# Environment URLs
+environments:
+  development:
+    api_url: http://localhost:3000/api
+    websocket_url: ws://localhost:3000
+    
+  staging:
+    api_url: https://staging-api.getinline.com/api
+    websocket_url: wss://staging-api.getinline.com
+    
+  production:
+    api_url: https://api.getinline.com/api
+    websocket_url: wss://api.getinline.com
+
+# Feature Flags
+features:
+  analytics: true
+  crash_reporting: true
+  push_notifications: true
+  sms_notifications: false
+  email_notifications: true
+
+# Business Rules
+business_rules:
+  max_appointments_per_day: 3
+  queue_refresh_interval: 30
+  notification_check_interval: 60
+  appointment_cancellation_hours: 24
+
+# API Configuration
+api:
+  timeout_seconds: 30
+  max_retries: 3
+  retry_delay_seconds: 2
+
+# Upload Limits
+uploads:
+  max_image_size_mb: 5
+  allowed_image_types:
+    - jpg
+    - jpeg
+    - png
+  max_pdf_size_mb: 10
+
+# Pagination
+pagination:
+  default_page_size: 20
+  max_page_size: 100
+
+# External Services
+external_services:
+  google_maps_api_key: YOUR_GOOGLE_MAPS_KEY
+  cloudinary_url: https://api.cloudinary.com/v1_1/getinline
+  cloudinary_upload_preset: getinline_uploads
+
+# Support
+support:
+  email: support@getinline.com
+  phone: +91 1234567890
+  website: https://getinline.com

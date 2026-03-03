@@ -1,0 +1,79 @@
+📌 User Module (/api/users)
+Method	Endpoint	Description	Request Body	Response	Access
+POST	/users/create	Create a new user (after Firebase login)	{ uid, name, mobile, address, role? (default "customer"), organizationId? }	{ success: true, data: User }	Firebase Auth
+GET	/users/uid/:uid	Get user by Firebase UID	–	{ success: true, data: User }	Self or Admin
+PATCH	/users/profile	Update own profile	{ name?, mobile?, address? }	{ success: true, data: User }	Self
+PATCH	/users/fcm-token	Update FCM token	{ fcmToken }	{ success: true, data: User }	Self
+PATCH	/users/role	Update user role (admin only)	{ uid, role }	{ success: true, data: User }	Admin
+PATCH	/users/status	Update user status (admin only)	{ uid, status }	{ success: true, data: User }	Admin
+GET	/users	List all users (with optional filters)	Query: ?role=&status=&organizationId=&limit=&skip=	{ success: true, users: [], pagination }	Admin
+PATCH	/users/role/:uid	Update user role by UID in URL	{ role }	{ success: true, data: User }	Admin
+🏢 Organization Module (/api/organizations)
+Method	Endpoint	Description	Request Body	Response	Access
+POST	/organizations/create	Create a new organization	{ organizationName, mobile, address, picUrl? (URL or file), latlong? }	{ success: true, data: Organization }	Firebase Auth (any)
+GET	/organizations/search	Search organizations by name/address	Query: ?q=	{ success: true, organizations: [] }	Public
+GET	/organizations/qr/:qrId	Get organization by QR ID	–	{ success: true, data: Organization }	Public
+GET	/organizations/:organizationId	Get organization by ID	–	{ success: true, data: Organization }	Org members or admin
+PATCH	/organizations/:organizationId	Update organization	{ organizationName?, mobile?, address?, picUrl?, latlong?, status?, remark? }	{ success: true, data: Organization }	Org admin only
+GET	/organizations/users/:organizationId	Get users of organization (with filters)	Query: ?role=&status=&limit=&skip=	{ success: true, users: [] }	Admin/Manager
+DELETE	/organizations/users/remove/:organizationId/:userId	Remove user from organization	–	{ success: true, message }	Admin only
+🤝 Join Request Module (/api/join-requests)
+Method	Endpoint	Description	Request Body	Response	Access
+POST	/join-requests/create	Send a join request	{ organizationId }	{ success: true, data: JoinRequest }	Firebase Auth
+GET	/join-requests/my	Get current user's join requests	–	{ success: true, joinRequests: [] }	Self
+GET	/join-requests/organization/:organizationId	List pending requests for an org	Query: ?status=&limit=&skip=	{ success: true, joinRequests: [] }	Admin/Manager
+PATCH	/join-requests/accept/:requestId	Accept a join request	{ role? (default "professional"), remark? }	{ success: true, data: JoinRequest }	Admin/Manager
+PATCH	/join-requests/reject/:requestId	Reject a join request	{ remark? }	{ success: true, data: JoinRequest }	Admin/Manager
+👨‍⚕️ Professional Module (/api/professionals)
+Method	Endpoint	Description	Request Body	Response	Access
+POST	/professionals/create	Create a professional	{ name, profession, degree, mobile, slots?, commonLeaves?, organizationId, isPaidAppointment?, appointmentFees?, minBookAppointmentFees?, commonMeetingTimeFrame? }	{ success: true, data: Professional }	Admin/Manager
+GET	/professionals/organization/:organizationId	List professionals in an organization	Query: ?active=&status=&limit=&skip=	{ success: true, professionals: [] }	Any auth
+GET	/professionals/:professionalId	Get a professional by ID	–	{ success: true, data: Professional }	Any auth
+PUT / PATCH	/professionals/:professionalId	Update a professional	{ name?, profession?, degree?, mobile?, slots?, commonLeaves?, active?, isPaidAppointment?, ... }	{ success: true, data: Professional }	Admin/Manager
+PATCH	/professionals/:professionalId/status	Update IN/OUT status	{ status, note? }	{ success: true, data: Professional }	Admin/Manager
+GET	/professionals/qr/:qrId	Get professional by QR ID	–	{ success: true, data: Professional }	Any auth
+GET	/professionals/:professionalId/history	Get status change history	Query: ?limit=&skip=	{ success: true, history: [] }	Admin/Manager
+📅 Appointment Module (/api/appointments)
+Method	Endpoint	Description	Request Body	Response	Access
+GET	/appointments/check-limit	Check if user can book more appointments on a date	Query: ?date=	{ success: true, booked, remaining, limit:3 }	Any auth
+POST	/appointments/create	Book an appointment	{ name, age, mobileNo, address, organizationId, professionalId, appointmentDate, appointmentExpectedTime }	{ success: true, data: Appointment }	Any auth
+GET	/appointments/my	Get current user's appointments	Query: ?status=&limit=&skip=	{ success: true, appointments: [] }	Self
+GET	/appointments/organization/:organizationId	Get appointments for an organization	Query: ?professionalId=&date=&status=&limit=&skip=	{ success: true, appointments: [] }	Admin/Manager/Receptionist
+GET	/appointments/professional/:professionalId	Get appointments for a professional (today's queue)	Query: ?date=&status=	{ success: true, appointments: [] }	Any auth
+GET	/appointments/today	Get today's appointments for user's org	–	{ success: true, appointments: [] }	Org staff
+PUT / PATCH	/appointments/:appointmentId	Update appointment (status etc.)	{ status?, appointmentExpectedTime?, name?, mobileNo? }	{ success: true, data: Appointment }	Creator or staff
+POST	/appointments/cancel/:appointmentId	Cancel an appointment	–	{ success: true, data: Appointment }	Creator or staff
+GET	/appointments/queue/:professionalId	Get queue and expected times	Query: ?date=	{ success: true, queue: [], meetingTime }	Any auth
+🏖️ Leave Module (/api/leaves)
+Method	Endpoint	Description	Request Body	Response	Access
+POST	/leaves/create	Create a leave period	{ professionalId, startDate, endDate, reason? }	{ success: true, data: Leave }	Admin/Manager
+GET	/leaves/professional/:professionalId	Get leaves for a professional	Query: ?start=&end=	{ success: true, leaves: [] }	Any auth
+PATCH	/leaves/:leaveId	Update a leave	{ startDate?, endDate?, reason? }	{ success: true, data: Leave }	Admin/Manager
+DELETE	/leaves/:leaveId	Delete a leave	–	{ success: true, message }	Admin/Manager
+GET	/leaves/check-availability	Check if professional is available on a date	Query: ?professionalId=&date=	{ success: true, available: boolean, reason? }	Any auth
+🔔 Notification Module (/api/notifications)
+Method	Endpoint	Description	Request Body	Response	Access
+GET	/notifications/user	Get notifications for logged-in user	Query: ?unreadOnly=&limit=&skip=	{ success: true, notifications: [] }	Self
+PATCH	/notifications/:notificationId/read	Mark a notification as read	–	{ success: true, data: Notification }	Self
+PATCH	/notifications/read-all	Mark all as read	–	{ success: true, message }	Self
+DELETE	/notifications/:notificationId	Delete a notification	–	{ success: true, message }	Self
+DELETE	/notifications/delete-read	Delete all read notifications	–	{ success: true, message }	Self
+🔔 Notify (Availability Alerts) Module (/api/notify)
+Method	Endpoint	Description	Request Body	Response	Access
+POST	/notify/create	Subscribe to professional availability	{ professionalId, organizationId }	{ success: true, data: Notify }	Any auth
+DELETE	/notify/:notifyId	Unsubscribe	–	{ success: true, message }	Self
+GET	/notify/user	Get all subscriptions for user	–	{ success: true, notifies: [] }	Self
+GET	/notify/check	Check if subscribed to a professional	Query: ?professionalId=	{ success: true, subscribed: boolean }	Self
+💰 Transaction Module (/api/transactions)
+Method	Endpoint	Description	Request Body	Response	Access
+POST	/transactions/create	Record a payment	{ appointmentId, amountPaid, paymentMode, paymentDate?, remarks? }	{ success: true, data: Transaction }	Admin/Manager/Receptionist
+GET	/transactions/appointment/:appointmentId	Get transactions for an appointment	–	{ success: true, transactions: [] }	Org staff
+GET	/transactions/organization/:organizationId	Get transactions for an organization	Query: ?startDate=&endDate=&limit=&skip=	{ success: true, transactions: [] }	Admin/Manager
+📌 Important Notes
+Date Format: All dates should be sent as ISO 8601 strings (e.g., 2025-03-03T10:30:00.000Z).
+
+Pagination: Most list endpoints support limit and skip query parameters.
+
+Error Responses: Always contain { success: false, message: "error description" }.
+
+File Uploads: For endpoints accepting picUrl, you can send a file using multipart/form-data with field name picUrl. The backend will upload to Cloudinary and store the URL.

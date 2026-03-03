@@ -1,0 +1,119 @@
+flowchart TD
+
+  classDef common   fill:#78350f,stroke:#f59e0b,color:#fef3c7
+  classDef auth     fill:#2e1065,stroke:#a78bfa,color:#ede9fe
+  classDef customer fill:#064e3b,stroke:#34d399,color:#d1fae5
+  classDef org      fill:#1e3a5f,stroke:#60a5fa,color:#dbeafe
+
+  %% 1. APP ENTRY
+  SPLASH([SplashScreen]):::common
+  ONBOARD([OnboardingScreen]):::common
+
+  SPLASH -->|First time user| ONBOARD
+  ONBOARD -->|Get Started| ULOGIN
+  SPLASH -->|Returning user| ULOGIN
+
+  %% 2. AUTH
+  ULOGIN([UserLoginScreen]):::auth
+  OLOGIN([OrganizationLoginScreen]):::auth
+  PROFILE([CreateUpdateProfileScreen]):::auth
+
+  ULOGIN -->|Switch to org login| OLOGIN
+  OLOGIN -->|Switch to user login| ULOGIN
+  ULOGIN -->|New user| PROFILE
+  OLOGIN -->|New user| PROFILE
+  PROFILE -->|Has org| ADASH
+  PROFILE -->|No org| CDASH
+  ULOGIN -->|Has org| ADASH
+  ULOGIN -->|No org| CDASH
+
+  %% 3. CUSTOMER FLOW
+  CDASH([CustomerDashboard]):::customer
+  SEARCH([SearchOrganizationScreen]):::customer
+  ORGDET([OrganizationDetailsScreen]):::customer
+  PROFDET([ProfessionalDetailsScreen]):::customer
+  MYAPT([MyAppointmentsScreen]):::customer
+  APTDET([AppointmentDetailScreen]):::customer
+  JOINORG([JoinOrganizationScreen]):::customer
+  NOTIFYME([NotifyMeScreen]):::customer
+
+  CDASH -->|Book Appointment| SEARCH
+  CDASH -->|My Appointments| MYAPT
+  CDASH -->|Scan QR| JOINORG
+
+  SEARCH -->|Select org| ORGDET
+  ORGDET -->|View professional| PROFDET
+  PROFDET -->|Book appointment| MYAPT
+
+  MYAPT -->|Tap appointment| APTDET
+  APTDET -->|Cancel appointment| MYAPT
+
+  JOINORG -->|Professional list| NOTIFYME
+
+  %% 4. ORG CREATION AND JOIN
+  CREATEORG([CreateOrganizationScreen]):::org
+  JOINORG2([JoinOrganizationScreen]):::org
+
+  OLOGIN -->|Create org| CREATEORG
+  OLOGIN -->|Join org| JOINORG2
+  CREATEORG -->|Success| ADASH
+  JOINORG2 -->|Request sent| ADASH
+
+  %% 5. ADMIN DASHBOARD
+  ADASH([AdminDashboard]):::org
+
+  ADASH -->|Professionals| PROFS
+  ADASH -->|Appointments| APTLIST
+  ADASH -->|Join Requests| JOINREQ
+  ADASH -->|Team Members| USERS
+  ADASH -->|Notifications| NOTIF
+  ADASH -->|Analytics| ANALYTICS
+  ADASH -->|Bulk Ops| BULK
+  ADASH -->|QR Code| QRDISP
+
+  %% 6. PROFESSIONALS
+  PROFS([ProfessionalsScreen]):::org
+  CREATEPROF([CreateUpdateProfessionalScreen]):::org
+  LEAVES([LeavesScreen]):::org
+
+  PROFS -->|Add or Edit| CREATEPROF
+  PROFS -->|Manage leaves| LEAVES
+  CREATEPROF -->|Saved| PROFS
+
+  %% 7. APPOINTMENTS
+  APTLIST([AppointmentListScreen]):::org
+  CREATEAPT([CreateUpdateAppointmentScreen]):::org
+  TRANS([TransactionListScreen]):::org
+
+  APTLIST -->|Create| CREATEAPT
+  APTLIST -->|Payments| TRANS
+  CREATEAPT -->|Saved| APTLIST
+
+  %% 8. USER MANAGEMENT
+  JOINREQ([JoinRequestsScreen]):::org
+  USERS([JoinedUsersScreen]):::org
+
+  JOINREQ -->|Accept or Reject| USERS
+
+  %% 9. MISC ORG SCREENS
+  NOTIF([NotificationScreen]):::org
+  ANALYTICS([AnalyticsScreen]):::org
+  BULK([BulkOperationsScreen]):::org
+  QRDISP([QRDisplayScreen]):::org
+
+  %% 10. SHARED SCREENS
+  PROFILESC([ProfileScreen]):::common
+  SETTINGS([SettingsScreen]):::common
+  HELP([HelpScreen]):::common
+  FAQ([FAQScreen]):::common
+  FEEDBACK([FeedbackScreen]):::common
+  TERMS([TermsScreen]):::common
+
+  CDASH -->|Profile menu| PROFILESC
+  ADASH -->|Profile menu| PROFILESC
+  CDASH -->|Settings| SETTINGS
+  ADASH -->|Settings| SETTINGS
+  SETTINGS --> HELP
+  SETTINGS --> FAQ
+  SETTINGS --> FEEDBACK
+  SETTINGS --> TERMS

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "637951798588",
+    "project_id": "getinlin",
+    "storage_bucket": "getinlin.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:637951798588:android:c5012c18e37002b97f8239",
+        "android_client_info": {
+          "package_name": "com.example.getinline"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLgu7_utHLozYd08JwH4qPw143eohsD7g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
