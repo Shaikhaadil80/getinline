@@ -182,7 +182,7 @@ class ProfessionalProvider with ChangeNotifier {
 
     try {
       final response = await _apiService.get(
-        '${ApiConstants.professionalsByOrg}/$organizationId',
+        '${ApiConstants.professionalsByOrg(organizationId)}',
       );
 
       if (response != null && response['professionals'] != null) {
@@ -354,16 +354,16 @@ class ProfessionalProvider with ChangeNotifier {
     required DateTime date,
   }) async {
     try {
-      final response = await _apiService.post(
+      final response = await _apiService.get(
         ApiConstants.checkAvailability,
-        body: {
+        queryParams: {
           'professionalId': professionalId,
           'date': date.toIso8601String(),
         },
       );
 
       if (response != null) {
-        return response['isAvailable'] ?? false;
+        return response['available'] ?? false;
       }
       return false;
     } catch (e) {

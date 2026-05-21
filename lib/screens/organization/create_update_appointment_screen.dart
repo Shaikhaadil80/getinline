@@ -18,11 +18,13 @@ import '../../widgets/date_time_picker_widget.dart';
 
 class CreateUpdateAppointmentScreen extends StatefulWidget {
   final String? appointmentId;
+  final String? organizationId;
   final bool isUpdate;
 
   const CreateUpdateAppointmentScreen({
     Key? key,
     this.appointmentId,
+    this.organizationId,
     this.isUpdate = false,
   }) : super(key: key);
 
@@ -69,7 +71,7 @@ class _CreateUpdateAppointmentScreenState extends State<CreateUpdateAppointmentS
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final professionalProvider = Provider.of<ProfessionalProvider>(context, listen: false);
 
-      final orgId = authProvider.organizationId;
+      final orgId = widget.organizationId ?? authProvider.organizationId;
       if (orgId == null) return;
 
       await professionalProvider.getProfessionalsByOrganization(orgId);
@@ -358,6 +360,7 @@ class _CreateUpdateAppointmentScreenState extends State<CreateUpdateAppointmentS
         organizationId: authProvider.organizationId!,
         professionalId: _selectedProfessional!.professionalId,
         appointmentDate: _selectedDate,
+        expectedTime: _expectedTime??'',
         createdBy: authProvider.currentUser!.uid,
         registeredByOrganization: loginPageName == AppConstants.organizationLoginPage,
       );

@@ -4,6 +4,7 @@
 // =============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:getinline/screens/organization/appointment_detail_screen.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/appointment_provider.dart';
@@ -201,12 +202,13 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
         return AppointmentCard(
           appointment: appointment,
           onTap: () {
-            // Navigate to appointment details
-            UIHelper.showInfoDialog(
-              context,
-              title: 'Appointment Details',
-              message: 'Detailed appointment view coming in next screen!',
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (_) => AppointmentDetailScreen(appointment: appointment),),);
+            // // Navigate to appointment details
+            // UIHelper.showInfoDialog(peopl
+            //   context,
+            //   title: 'Appointment Details',
+            //   message: 'Detailed appointment view coming in next screen!',
+            // );
           },
           onCancel: appointment.canBeCancelled ? () => _handleCancelAppointment(appointment) : null,
           showActions: true,

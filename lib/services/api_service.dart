@@ -4,7 +4,6 @@
 // =============================================================================
 
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -76,9 +75,9 @@ class ApiService {
       final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
       final headers = await _getHeaders();
       
-      log('🌐 POST Request: $uri');
-      log('📦 HEADER: ${jsonEncode(headers)}');
-      log('📦 Body: ${jsonEncode(body)}');
+      // log('🌐 POST Request: $uri');
+      // log('📦 HEADER: ${jsonEncode(headers)}');
+      // log('📦 Body: ${jsonEncode(body)}');
       
       final response = await http.post(
         uri,

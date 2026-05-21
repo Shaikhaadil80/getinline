@@ -51,10 +51,10 @@ class AppColors {
 
 class ApiConstants {
   // Base URL - UPDATE THIS WITH YOUR BACKEND URL
-  // static const String baseUrl = 'http://localhost:5000/api';
+  static const String baseUrl = 'http://localhost:5000/api';
   // static const String baseUrl = 'https://getinline-backend.onrender.com/api';
-  static const String baseUrl = 'http://10.115.54.158:5000/api';
-  // static const String baseUrl = 'http://10.115.54.158/api/health';
+  // static const String baseUrl = 'http://10.62.30.158:5000/api';
+  // static const String baseUrl = 'http://10.115.54.158/api/health',;
   // static const String baseUrl = 'https://your-backend-url.com/api';
   
   // Auth Endpoints
@@ -223,7 +223,7 @@ class AppConstants {
   ];
   
   // Appointment Status
-  static const String appointmentAccepted = 'Accepted';
+  static const String appointmentAccepted = 'accepted';
   static const String appointmentPending = 'pending';
   static const String appointmentCancelled = 'cancelled';
   static const String appointmentInLine = 'InLine';

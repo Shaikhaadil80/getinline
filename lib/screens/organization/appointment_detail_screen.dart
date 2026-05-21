@@ -10,11 +10,11 @@ import '../../utils/helpers.dart';
 import '../../widgets/loading_widget.dart';
 
 class AppointmentDetailScreen extends StatefulWidget {
-  final String appointmentId;
+  final AppointmentModel appointment;
 
   const AppointmentDetailScreen({
     Key? key,
-    required this.appointmentId,
+    required this.appointment,
   }) : super(key: key);
 
   @override
@@ -24,13 +24,16 @@ class AppointmentDetailScreen extends StatefulWidget {
 class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
   AppointmentModel? _appointment;
   int? _queuePosition;
+  // bool _isLoading = false;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
         WidgetsBinding.instance.addPostFrameCallback((_) {
-    _loadAppointmentDetails();
+    // _loadAppointmentDetails();
+    _appointment = widget.appointment;
+    setState(() => _isLoading = false);
     });
   }
 
@@ -43,7 +46,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
       
       // Mock appointment data
       _appointment = AppointmentModel(
-        appointmentId: widget.appointmentId,
+        appointmentId: widget.appointment.appointmentId,
         name: 'John Doe',
         age: 30,
         mobileNo: '9876543210',

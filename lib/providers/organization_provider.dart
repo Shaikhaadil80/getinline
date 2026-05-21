@@ -53,75 +53,78 @@ class OrganizationProvider with ChangeNotifier {
   // CREATE ORGANIZATION
   // =============================================================================
 
+  /// [pic] can be either a [File] (for upload) or a [String] (direct URL).
+  Future<bool> createOrganization({
+    required String organizationName,
+    required String mobile,
+    required String address,
+    String? latlong,
+    dynamic pic, // File or String URL
+    required String
+    createdBy, // kept for compatibility, but not sent to backend
+  }) async {
+    _setLoading(true);
+    _setError(null);
 
-/// [pic] can be either a [File] (for upload) or a [String] (direct URL).
-Future<bool> createOrganization({
-  required String organizationName,
-  required String mobile,
-  required String address,
-  String? latlong,
-  dynamic pic,          // File or String URL
-  required String createdBy, // kept for compatibility, but not sent to backend
-}) async {
-  _setLoading(true);
-  _setError(null);
+    try {
+      dynamic response;
+      final endpoint = ApiConstants.createOrganization;
 
-  try {
-    dynamic response;
-    final endpoint = ApiConstants.createOrganization;
-
-    if (pic is XFile) {
-      // Use multipart upload for file
-      response = await _apiService.uploadFile(
-        endpoint,
-        pic,
-        'picUrl', // field name expected by backend (must match 'picUrl' in multer)
-        additionalFields: {
+      if (pic is XFile) {
+        // Use multipart upload for file
+        response = await _apiService.uploadFile(
+          endpoint,
+          pic,
+          'picUrl', // field name expected by backend (must match 'picUrl' in multer)
+          additionalFields: {
+            'organizationName': organizationName,
+            'mobile': mobile,
+            'address': address,
+            if (latlong != null) 'latlong': latlong,
+            // Do NOT send createdBy/updatedBy/status – backend uses token
+          },
+        );
+      } else {
+        // Send as JSON; picUrl may be null or a string URL
+        final body = {
           'organizationName': organizationName,
           'mobile': mobile,
           'address': address,
           if (latlong != null) 'latlong': latlong,
-          // Do NOT send createdBy/updatedBy/status – backend uses token
-        },
-      );
-    } else {
-      // Send as JSON; picUrl may be null or a string URL
-      final body = {
-        'organizationName': organizationName,
-        'mobile': mobile,
-        'address': address,
-        if (latlong != null) 'latlong': latlong,
-        if (pic != null) 'picUrl': pic, // send URL string
-      };
-      response = await _apiService.post(endpoint, body: body);
-    }
+          if (pic != null) 'picUrl': pic, // send URL string
+        };
+        response = await _apiService.post(endpoint, body: body);
+      }
 
-    // Backend returns { success: true, data: organization }
-    if (response != null && response['data'] != null) {
-      _currentOrganization = OrganizationModel.fromJson(response['data']);
-      await _dbService.saveOrganizationId(_currentOrganization!.organizationId);
-      print('✅ Organization created: ${_currentOrganization!.organizationId}');
+      // Backend returns { success: true, data: organization }
+      if (response != null && response['data'] != null) {
+        _currentOrganization = OrganizationModel.fromJson(response['data']);
+        await _dbService.saveOrganizationId(
+          _currentOrganization!.organizationId,
+        );
+        print(
+          '✅ Organization created: ${_currentOrganization!.organizationId}',
+        );
+        _setLoading(false);
+        return true;
+      }
+
+      throw ApiException('Failed to create organization: invalid response');
+    } on UnauthorizedException catch (e) {
+      _setError('Session expired. Please login again.');
+      // Optionally trigger logout
+    } on ValidationException catch (e) {
+      _setError('Validation failed: ${e.message}');
+    } on ApiException catch (e) {
+      _setError('Organization creation failed: ${e.message}');
+    } catch (e) {
+      print('❌ Create organization error: $e');
+      _setError('Unexpected error: $e');
+    } finally {
       _setLoading(false);
-      return true;
     }
-
-    throw ApiException('Failed to create organization: invalid response');
-  } on UnauthorizedException catch (e) {
-    _setError('Session expired. Please login again.');
-    // Optionally trigger logout
-  } on ValidationException catch (e) {
-    _setError('Validation failed: ${e.message}');
-  } on ApiException catch (e) {
-    _setError('Organization creation failed: ${e.message}');
-  } catch (e) {
-    print('❌ Create organization error: $e');
-    _setError('Unexpected error: $e');
-  } finally {
-    _setLoading(false);
+    return false;
   }
-  return false;
-}
-
 
   // Future<bool> createOrganization({
   //   required String organizationName,
@@ -154,7 +157,7 @@ Future<bool> createOrganization({
   //     if (response != null && response['organization'] != null) {
   //       _currentOrganization = OrganizationModel.fromJson(response['organization']);
   //       await _dbService.saveOrganizationId(_currentOrganization!.organizationId);
-        
+
   //       print('✅ Organization created: ${_currentOrganization!.organizationId}');
   //       _setLoading(false);
   //       return true;
@@ -169,84 +172,83 @@ Future<bool> createOrganization({
   //   }
   // }
 
-
   // =============================================================================
   // CREATE ORGANIZATION
   // =============================================================================
 
   /// Updates an existing organization.
-/// [pic] can be File, String URL, or null to remove the picture.
-Future<bool> updateOrganization({
-  required String organizationId,
-  String? organizationName,
-  String? mobile,
-  String? address,
-  String? latlong,
-  dynamic pic,          // File, String URL, or null
-}) async {
-  _setLoading(true);
-  _setError(null);
+  /// [pic] can be File, String URL, or null to remove the picture.
+  Future<bool> updateOrganization({
+    required String organizationId,
+    String? organizationName,
+    String? mobile,
+    String? address,
+    String? latlong,
+    dynamic pic, // File, String URL, or null
+  }) async {
+    _setLoading(true);
+    _setError(null);
 
-  try {
-    dynamic response;
-    final endpoint = '${ApiConstants.createOrganization}/$organizationId';
+    try {
+      dynamic response;
+      final endpoint = '${ApiConstants.createOrganization}/$organizationId';
 
-    if (pic is XFile) {
-      // Multipart for file upload
-      response = await _apiService.uploadFile(
-        endpoint,
-        pic,
-        'picUrl', // field name expected by backend
-        additionalFields: {
-          if (organizationName != null) 'organizationName': organizationName,
-          if (mobile != null) 'mobile': mobile,
-          if (address != null) 'address': address,
-          if (latlong != null) 'latlong': latlong,
-          // To remove picture, send picUrl = '' (handled below via JSON)
-        },
-      );
-    } else {
-      // JSON update; pic can be String URL or null (to remove)
-      final Map<String, dynamic> body = {};
-      if (organizationName != null) body['organizationName'] = organizationName;
-      if (mobile != null) body['mobile'] = mobile;
-      if (address != null) body['address'] = address;
-      if (latlong != null) body['latlong'] = latlong;
-      if (pic != null) {
-        body['picUrl'] = pic; // String URL
+      if (pic is XFile) {
+        // Multipart for file upload
+        response = await _apiService.uploadFile(
+          endpoint,
+          pic,
+          'picUrl', // field name expected by backend
+          additionalFields: {
+            if (organizationName != null) 'organizationName': organizationName,
+            if (mobile != null) 'mobile': mobile,
+            if (address != null) 'address': address,
+            if (latlong != null) 'latlong': latlong,
+            // To remove picture, send picUrl = '' (handled below via JSON)
+          },
+        );
       } else {
-        // Explicitly set picUrl to null to remove the picture
-        body['picUrl'] = null;
+        // JSON update; pic can be String URL or null (to remove)
+        final Map<String, dynamic> body = {};
+        if (organizationName != null)
+          body['organizationName'] = organizationName;
+        if (mobile != null) body['mobile'] = mobile;
+        if (address != null) body['address'] = address;
+        if (latlong != null) body['latlong'] = latlong;
+        if (pic != null) {
+          body['picUrl'] = pic; // String URL
+        } else {
+          // Explicitly set picUrl to null to remove the picture
+          body['picUrl'] = null;
+        }
+
+        response = await _apiService.patch(endpoint, body: body);
       }
 
-      response = await _apiService.patch(endpoint, body: body);
-    }
+      if (response != null && response['data'] != null) {
+        _currentOrganization = OrganizationModel.fromJson(response['data']);
+        print('✅ Organization updated: $_currentOrganization');
+        _setLoading(false);
+        return true;
+      }
 
-    if (response != null && response['data'] != null) {
-      _currentOrganization = OrganizationModel.fromJson(response['data']);
-      print('✅ Organization updated: $_currentOrganization');
+      throw ApiException('Failed to update organization: invalid response');
+    } on UnauthorizedException catch (e) {
+      _setError('Session expired. Please login again.');
+    } on ForbiddenException catch (e) {
+      _setError('You do not have permission to update this organization.');
+    } on ValidationException catch (e) {
+      _setError('Validation failed: ${e.message}');
+    } on ApiException catch (e) {
+      _setError('Update failed: ${e.message}');
+    } catch (e) {
+      print('❌ Update organization error: $e');
+      _setError('Unexpected error: $e');
+    } finally {
       _setLoading(false);
-      return true;
     }
-
-    throw ApiException('Failed to update organization: invalid response');
-  } on UnauthorizedException catch (e) {
-    _setError('Session expired. Please login again.');
-  } on ForbiddenException catch (e) {
-    _setError('You do not have permission to update this organization.');
-  } on ValidationException catch (e) {
-    _setError('Validation failed: ${e.message}');
-  } on ApiException catch (e) {
-    _setError('Update failed: ${e.message}');
-  } catch (e) {
-    print('❌ Update organization error: $e');
-    _setError('Unexpected error: $e');
-  } finally {
-    _setLoading(false);
+    return false;
   }
-  return false;
-}
-
 
   // =============================================================================
   // GET ORGANIZATION
@@ -257,7 +259,9 @@ Future<bool> updateOrganization({
     _setError(null);
 
     try {
-      final response = await _apiService.get('${ApiConstants.getOrganizationById}/$orgId');
+      final response = await _apiService.get(
+        '${ApiConstants.getOrganizationById(orgId)}',
+      );
 
       if (response != null && response['data'] != null) {
         _currentOrganization = OrganizationModel.fromJson(response['data']);
@@ -276,7 +280,9 @@ Future<bool> updateOrganization({
 
   Future<OrganizationModel?> getOrganizationByQr(String qrId) async {
     try {
-      final response = await _apiService.get('${ApiConstants.getOrgByQr}/$qrId');
+      final response = await _apiService.get(
+        '${ApiConstants.getOrgByQr}/$qrId',
+      );
 
       if (response != null && response['organization'] != null) {
         return OrganizationModel.fromJson(response['organization']);
@@ -302,15 +308,47 @@ Future<bool> updateOrganization({
         queryParams: {'q': query},
       );
 
-      if (response != null && response['organizations'] != null) {
-        _organizations = (response['organizations'] as List)
+      if (response != null && response['data'] != null) {
+        _organizations = (response['data'] as List)
             .map((json) => OrganizationModel.fromJson(json))
             .toList();
-        
+
         _setLoading(false);
         return _organizations;
       }
+      _organizations = [];
+      _setLoading(false);
+      return [];
+    } catch (e) {
+      print('❌ Search organizations error: $e');
+      _setError('Search failed: $e');
+      _organizations = [];
+      _setLoading(false);
+      return [];
+    }
+  }
+  // =============================================================================
+  // SEARCH ORGANIZATIONS
+  // =============================================================================
 
+  Future<List<OrganizationModel>> searchOrganizationsByQr(String qrId) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final response = await _apiService.get(
+        ApiConstants.getOrgByQr,
+        queryParams: {'qrId': qrId},
+      );
+
+      if (response != null && response['data'] != null) {
+        _organizations = (response['data'] as List)
+            .map((json) => OrganizationModel.fromJson(json))
+            .toList();
+
+        _setLoading(false);
+        return _organizations;
+      }
       _organizations = [];
       _setLoading(false);
       return [];
@@ -373,7 +411,7 @@ Future<bool> updateOrganization({
       } else {
         _joinRequests = [];
       }
-      
+
       _setLoading(false);
     } catch (e) {
       print('❌ Get join requests error: $e');
@@ -394,15 +432,12 @@ Future<bool> updateOrganization({
     try {
       await _apiService.post(
         '${ApiConstants.acceptJoinRequest(requestId)}',
-        body: {
-          'role': role,
-          'handledBy': handledBy,
-        },
+        body: {'role': role, 'handledBy': handledBy},
       );
 
       // Remove from local list
       _joinRequests.removeWhere((r) => r.requestId == requestId);
-      
+
       print('✅ Join request accepted');
       _setLoading(false);
       return true;
@@ -429,7 +464,7 @@ Future<bool> updateOrganization({
 
       // Remove from local list
       _joinRequests.removeWhere((r) => r.requestId == requestId);
-      
+
       print('✅ Join request rejected');
       _setLoading(false);
       return true;
@@ -461,7 +496,7 @@ Future<bool> updateOrganization({
       } else {
         _organizationUsers = [];
       }
-      
+
       _setLoading(false);
     } catch (e) {
       print('❌ Get organization users error: $e');
@@ -479,16 +514,15 @@ Future<bool> updateOrganization({
     try {
       await _apiService.patch(
         '${ApiConstants.updateUserRole}/$userId',
-        body: {
-          'role': role,
-          'updatedBy': updatedBy,
-        },
+        body: {'role': role, 'updatedBy': updatedBy},
       );
 
       // Update local list
       final index = _organizationUsers.indexWhere((u) => u.uid == userId);
       if (index != -1) {
-        _organizationUsers[index] = _organizationUsers[index].copyWith(role: role);
+        _organizationUsers[index] = _organizationUsers[index].copyWith(
+          role: role,
+        );
         notifyListeners();
       }
 
@@ -519,24 +553,25 @@ Future<bool> updateOrganization({
     }
   }
 
-// =============================================================================
-// MISSING: GET MY JOIN REQUESTS (joinRequestRoutes.js)
-// =============================================================================
-Future<void> getMyJoinRequests() async {
-  _setLoading(true);
-  try {
-    final response = await _apiService.get(ApiConstants.myJoinRequests);
-    if (response != null && response['requests'] != null) {
-      _joinRequests = (response['requests'] as List)
-          .map((json) => JoinRequestModel.fromJson(json)).toList();
-      notifyListeners();
+  // =============================================================================
+  // MISSING: GET MY JOIN REQUESTS (joinRequestRoutes.js)
+  // =============================================================================
+  Future<void> getMyJoinRequests() async {
+    _setLoading(true);
+    try {
+      final response = await _apiService.get(ApiConstants.myJoinRequests);
+      if (response != null && response['requests'] != null) {
+        _joinRequests = (response['requests'] as List)
+            .map((json) => JoinRequestModel.fromJson(json))
+            .toList();
+        notifyListeners();
+      }
+    } catch (e) {
+      print('❌ Get my join requests error: $e');
+    } finally {
+      _setLoading(false);
     }
-  } catch (e) {
-    print('❌ Get my join requests error: $e');
-  } finally {
-    _setLoading(false);
   }
-}
   // =============================================================================
   // CLEAR DATA
   // =============================================================================

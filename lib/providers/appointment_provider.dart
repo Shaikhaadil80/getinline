@@ -30,6 +30,7 @@ class AppointmentProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
@@ -56,6 +57,7 @@ class AppointmentProvider with ChangeNotifier {
     required String address,
     required String organizationId,
     required String professionalId,
+    required String expectedTime,
     required DateTime appointmentDate,
     required String createdBy,
     bool registeredByOrganization = true,
@@ -84,6 +86,7 @@ class AppointmentProvider with ChangeNotifier {
           'organizationId': organizationId,
           'professionalId': professionalId,
           'appointmentDate': appointmentDate.toIso8601String(),
+          'appointmentExpectedTime': expectedTime,
           'registeredByOrganization': registeredByOrganization,
           'status': AppConstants.appointmentAccepted,
           'createdBy': createdBy,
@@ -192,7 +195,7 @@ class AppointmentProvider with ChangeNotifier {
 
     try {
       final response = await _apiService.get(
-        '${ApiConstants.organizationAppointments}/$organizationId',
+        '${ApiConstants.organizationAppointments(organizationId)}',
       );
 
       if (response != null && response['appointments'] != null) {
@@ -298,16 +301,16 @@ class AppointmentProvider with ChangeNotifier {
 
   Future<bool> checkAppointmentLimit(String userId, DateTime date) async {
     try {
-      final response = await _apiService.post(
+      final response = await _apiService.get(
         ApiConstants.checkAppointmentLimit,
-        body: {
+        queryParams: {
           'userId': userId,
           'date': date.toIso8601String(),
         },
       );
 
       if (response != null) {
-        return response['canBook'] ?? false;
+        return (response['remaining'] ?? 0 ) > 0;
       }
       return false;
     } catch (e) {
@@ -407,6 +410,118 @@ Future<void> getOrganizationTransactions(String organizationId) async {
     print('❌ Get organization transactions error: $e');
   }
 }
+  
+  // =============================================================================
+  // UPDATE STATUS & MANAGE QUEUE
+  // =============================================================================
+
+  Future<bool> updateAppointmentStatus({
+    required String appointmentId,
+    required String status,
+    required String updatedBy,
+  }) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      print('🔄 Updating appointment status: $appointmentId to $status');
+
+      final response = await _apiService.put(
+        '${ApiConstants.updateAppointment}/$appointmentId',
+        body: {
+          'status': status,
+          'updatedBy': updatedBy,
+        },
+      );
+
+      if (response != null && response['appointment'] != null) {
+        final updated = AppointmentModel.fromJson(response['appointment']);
+
+        // Update in master appointments list
+        final apptIndex = _appointments.indexWhere((a) => a.appointmentId == appointmentId);
+        if (apptIndex != -1) {
+          _appointments[apptIndex] = updated;
+        }
+
+        // Update in my appointments list
+        final myApptIndex = _myAppointments.indexWhere((a) => a.appointmentId == appointmentId);
+        if (myApptIndex != -1) {
+          _myAppointments[myApptIndex] = updated;
+        }
+
+        // Update in queue list
+        final queueIndex = _queueAppointments.indexWhere((a) => a.appointmentId == appointmentId);
+        if (queueIndex != -1) {
+          if (status == 'completed' || status == 'cancelled') {
+            _queueAppointments.removeAt(queueIndex);
+          } else {
+            _queueAppointments[queueIndex] = updated;
+          }
+        }
+
+        print('✅ Appointment status updated');
+        notifyListeners();
+        _setLoading(false);
+        return true;
+      }
+
+      throw Exception('Failed to update status');
+    } catch (e) {
+      print('❌ Update status error: $e');
+      _setError('Failed to update status: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> skipAppointment({
+    required String appointmentId,
+    required String updatedBy,
+  }) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      print('⏭️ Skipping appointment: $appointmentId');
+
+      if (_queueAppointments.isEmpty) return false;
+
+      // Get the last appointment's time in the queue to move this one to the end
+      final lastAppointment = _queueAppointments.last;
+      
+      final response = await _apiService.put(
+        '${ApiConstants.updateAppointment}/$appointmentId',
+        body: {
+          'appointmentExpectedTime': lastAppointment.appointmentExpectedTime,
+          'updatedBy': updatedBy,
+        },
+      );
+
+      if (response != null && response['appointment'] != null) {
+        final updated = AppointmentModel.fromJson(response['appointment']);
+
+        // Reorder locally
+        final queueIndex = _queueAppointments.indexWhere((a) => a.appointmentId == appointmentId);
+        if (queueIndex != -1) {
+          _queueAppointments.removeAt(queueIndex);
+          _queueAppointments.add(updated);
+        }
+
+        print('✅ Appointment skipped and moved to end of queue');
+        notifyListeners();
+        _setLoading(false);
+        return true;
+      }
+
+      throw Exception('Failed to skip appointment');
+    } catch (e) {
+      print('❌ Skip appointment error: $e');
+      _setError('Failed to skip appointment: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
   // =============================================================================
   // CLEAR DATA
   // =============================================================================

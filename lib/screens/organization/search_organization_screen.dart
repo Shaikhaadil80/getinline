@@ -4,6 +4,9 @@
 // =============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart'; // Added Mobile Scanner import
+import 'package:getinline/screens/organization/create_update_appointment_screen.dart';
+import 'package:getinline/screens/organization/organization_details_screen.dart';
 import 'package:provider/provider.dart';
 import '../../providers/organization_provider.dart';
 import '../../models/organization_model.dart';
@@ -83,14 +86,7 @@ class _SearchOrganizationScreenState extends State<SearchOrganizationScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const JoinOrganizationScreen(),
-                  ),
-                );
-              },
+              onPressed: _openScanner, // Updated onPressed
               icon: const Icon(Icons.qr_code_scanner),
               label: const Text('Scan QR Code'),
               style: OutlinedButton.styleFrom(
@@ -222,6 +218,7 @@ class _SearchOrganizationScreenState extends State<SearchOrganizationScreen> {
     );
   }
 
+
   Future<void> _performSearch() async {
     final query = _searchController.text.trim();
     if (query.isEmpty) {
@@ -338,11 +335,13 @@ class _SearchOrganizationScreenState extends State<SearchOrganizationScreen> {
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.pop(context);
-                  UIHelper.showInfoDialog(
-                    context,
-                    title: 'Book Appointment',
-                    message: 'Appointment booking feature coming in next screens!',
-                  );
+                  // Navigator.push(context, MaterialPageRoute(builder: (context) => OrganizationDetailsScreen(organization: org), ));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => CreateUpdateAppointmentScreen(organizationId: org.organizationId), ));
+                  // UIHelper.showInfoDialog(
+                  //   context,
+                  //   title: 'Book Appointment',
+                  //   message: 'Appointment booking feature coming in next screens!',
+                  // );
                 },
                 icon: const Icon(Icons.event),
                 label: const Text('Book Appointment'),
@@ -388,5 +387,61 @@ class _SearchOrganizationScreenState extends State<SearchOrganizationScreen> {
         ),
       ],
     );
+  }
+
+  // =============================================================================
+  // ADDED: QR Scanner Methods
+  // =============================================================================
+  
+  void _openScanner() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(title: const Text('Scan Organization QR')),
+          body: MobileScanner(
+            onDetect: (capture) {
+              final List<Barcode> barcodes = capture.barcodes;
+              if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
+                final String code = barcodes.first.rawValue!;
+                Navigator.pop(context, code);
+              }
+            },
+          ),
+        ),
+      ),
+    ).then((scannedCode) {
+      if (scannedCode != null && scannedCode is String) {
+        _performSearchByQr(scannedCode);
+      }
+    });
+  }
+
+  Future<void> _performSearchByQr(String qrId) async {
+    setState(() {
+      _isLoading = true;
+      _hasSearched = true;
+      _searchController.clear(); // Clear text field to avoid confusion
+    });
+
+    try {
+      final organizationProvider = Provider.of<OrganizationProvider>(context, listen: false);
+      final results = await organizationProvider.searchOrganizationsByQr(qrId);
+
+      setState(() {
+        _organizations = results;
+        _isLoading = false;
+      });
+
+      if (results.isEmpty && mounted) {
+        UIHelper.showSnackBar(context, 'No organization found for this QR code', isError: true);
+      }
+    } catch (e) {
+      print('❌ QR Search error: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        UIHelper.showSnackBar(context, 'QR Search failed', isError: true);
+      }
+    }
   }
 }

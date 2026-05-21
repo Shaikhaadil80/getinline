@@ -562,7 +562,7 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => AppointmentDetailScreen(appointmentId: appointment.appointmentId),
+                      builder: (_) => AppointmentDetailScreen(appointment: appointment),
                     ),
                   );
                 },
@@ -729,7 +729,7 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => AppointmentDetailScreen(appointmentId: appointment.appointmentId),
+                    builder: (_) => AppointmentDetailScreen(appointment: appointment),
                   ),
                 );
               },

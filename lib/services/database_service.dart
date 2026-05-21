@@ -353,7 +353,6 @@ class DatabaseService {
     final isLoggedIn = await getLoginState();
     final token = await getUserToken();
     final uid = await getUserUid();
-    
     return isLoggedIn && token != null && uid != null;
   }
 
